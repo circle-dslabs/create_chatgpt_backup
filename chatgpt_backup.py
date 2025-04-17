@@ -1,29 +1,27 @@
-# ChatGPT Export to Markdown Converter
-# - Uses conversations.json
-# - Organizes by Year/Month folders
-# - Links pre-downloaded images from export (files/ or images/)
-# - Optionally zips the output folder
-
 import os
 import json
 import re
+import base64
+import argparse
 from datetime import datetime
 from zipfile import ZipFile
 
-# === USER CONFIGURATION ===
-INPUT_JSON = "conversations.json"            # Exported from ChatGPT ZIP
-MARKDOWN_DIR = "markdown_chats"             # Output base directory
-IMAGE_SUBFOLDER = "files"                   # Name of image folder in the export
-ZIP_OUTPUT = True                            # Whether to create a ZIP archive
-ZIP_NAME = "chatgpt_markdown_archive.zip"
-
-# === UTILITY ===
 def sanitize_filename(name):
     return "".join(c if c.isalnum() or c in (' ', '_', '-') else '_' for c in name).strip().replace(' ', '_')
 
-def link_images(text):
-    # Replace placeholders like <file>abc.png</file> or raw filenames with markdown links
-    return re.sub(r"<file>([^<]+)</file>", rf"![](../{IMAGE_SUBFOLDER}/\1)", text)
+def embed_images(text, image_base_path):
+    def replacer(match):
+        filename = match.group(1)
+        filepath = os.path.join(image_base_path, filename)
+        if not os.path.exists(filepath):
+            return f"**[Missing file: {filename}]**"
+        ext = os.path.splitext(filename)[-1][1:].lower()
+        mime = f"image/{ext if ext != 'jpg' else 'jpeg'}"
+        with open(filepath, "rb") as img_file:
+            b64_data = base64.b64encode(img_file.read()).decode('utf-8')
+        return f"![{filename}](data:{mime};base64,{b64_data})"
+
+    return re.sub(r"<file>([^<]+)</file>", replacer, text)
 
 def convert_chats(json_path, output_dir, image_folder):
     os.makedirs(output_dir, exist_ok=True)
@@ -40,7 +38,6 @@ def convert_chats(json_path, output_dir, image_folder):
         if not sorted_msgs:
             continue
 
-        # Organize by first message time
         first_time = sorted_msgs[0].get("create_time", 0)
         dt = datetime.fromtimestamp(first_time)
         year, month = dt.strftime('%Y'), dt.strftime('%B')
@@ -58,7 +55,7 @@ def convert_chats(json_path, output_dir, image_folder):
             ts_str = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S') if ts else "N/A"
 
             for part in parts:
-                part = link_images(part)
+                part = embed_images(part, image_folder)
                 content += f"**{role.capitalize()} ({ts_str}):**\n\n{part.strip()}\n\n---\n\n"
 
         with open(out_path, 'w', encoding='utf-8') as out:
@@ -75,8 +72,15 @@ def zip_output(folder, zipname):
                 zipf.write(full_path, arcname)
     print(f"✅ Created ZIP archive: {zipname}")
 
-# === MAIN ===
 if __name__ == "__main__":
-    convert_chats(INPUT_JSON, MARKDOWN_DIR, IMAGE_SUBFOLDER)
-    if ZIP_OUTPUT:
-        zip_output(MARKDOWN_DIR, ZIP_NAME)
+    parser = argparse.ArgumentParser(description="Convert ChatGPT export to Markdown with embedded images")
+    parser.add_argument("--json", default="conversations.json", help="Path to conversations.json")
+    parser.add_argument("--output", default="markdown_chats", help="Output folder for markdown")
+    parser.add_argument("--image-folder", default=".", help="Folder where exported images/files are stored")
+    parser.add_argument("--zip", action="store_true", help="If set, zip the output folder")
+    parser.add_argument("--zip-name", default="chatgpt_markdown_archive.zip", help="Name of the zip archive to create")
+    args = parser.parse_args()
+
+    convert_chats(args.json, args.output, args.image_folder)
+    if args.zip:
+        zip_output(args.output, args.zip_name)
