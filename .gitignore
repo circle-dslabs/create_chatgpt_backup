@@ -1,0 +1,19 @@
+# Secrets / credentials
+client_secrets.json
+token.json
+
+# Input files
+conversations.json
+
+# Output folders and files
+markdown_chats/
+chatgpt_markdown_archive.zip
+
+# Python cache
+__pycache__/
+*.pyc
+
+# IDE/workspace settings
+.vscode/
+.idea/
+.DS_Store

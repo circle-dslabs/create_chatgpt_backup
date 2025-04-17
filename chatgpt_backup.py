@@ -32,7 +32,7 @@ def convert_chats(json_path, output_dir, image_folder):
         messages = convo.get("mapping", {}).values()
         sorted_msgs = sorted(
             (m.get("message") for m in messages if m.get("message")),
-            key=lambda m: m.get("create_time", 0)
+            key=lambda m: m.get("create_time") or 0
         )
 
         if not sorted_msgs:

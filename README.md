@@ -66,3 +66,6 @@ chatgpt-markdown-archive/
 
 MIT License
 
+```
+python create_chatgpt_backup/chatgpt_backup.py --json chagpt_export_2025_04_16/conversations.json --output chagpt_export_2025_04_16_out_markdowns_per_chat --image-folder create_chatgpt_backup/
+```
