@@ -28,7 +28,7 @@ def convert_chats(json_path, output_dir, image_folder):
     with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
-    for i, convo in enumerate(data.get("conversations", [])):
+    for i, convo in enumerate(data):
         messages = convo.get("mapping", {}).values()
         sorted_msgs = sorted(
             (m.get("message") for m in messages if m.get("message")),
