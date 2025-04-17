@@ -65,8 +65,15 @@ def convert_chats(json_path, output_dir, image_folder):
             ts_str = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S') if ts else "N/A"
 
             for part in parts:
-                part = embed_images(part, image_folder)
-                content += f"**{role.capitalize()} ({ts_str}):**\n\n{part.strip()}\n\n---\n\n"
+                if isinstance(part, dict) and "text" in part:
+                    part_text = part["text"]
+                elif isinstance(part, str):
+                    part_text = part
+                else:
+                    continue  # skip if not usable
+
+                part_text = embed_images(part_text, image_folder)
+                content += f"**{role.capitalize()} ({ts_str}):**\n\n{part_text.strip()}\n\n---\n\n"
 
         with open(out_path, 'w', encoding='utf-8') as out:
             out.write(content)
