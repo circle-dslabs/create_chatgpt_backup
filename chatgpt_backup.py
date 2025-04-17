@@ -38,7 +38,15 @@ def convert_chats(json_path, output_dir, image_folder):
         if not sorted_msgs:
             continue
 
-        first_time = sorted_msgs[0].get("create_time", 0)
+            # Find first message with a valid timestamp
+            first_msg_with_time = next((m for m in sorted_msgs if m.get("create_time") is not None), None)
+
+            if first_msg_with_time:
+                dt = datetime.fromtimestamp(first_msg_with_time["create_time"])
+                year, month = dt.strftime('%Y'), dt.strftime('%B')
+            else:
+                year, month = "unknown", "unknown"
+
         dt = datetime.fromtimestamp(first_time)
         year, month = dt.strftime('%Y'), dt.strftime('%B')
         convo_dir = os.path.join(output_dir, year, month)
